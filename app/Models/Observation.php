@@ -10,7 +10,7 @@ class Observation extends Model
     use HasFactory;
 
     protected $fillable = [
-        'species', 
+        'species',
         'amount',
         'age',
         'sex',
@@ -21,6 +21,6 @@ class Observation extends Model
         'final_date',
         'observer',
         'image',
+        'longitude'
     ];
-
 }

@@ -1,9 +1,10 @@
 <?php
 
 namespace App\Http\Controllers;
-use App\Models\Observation;
 
+use App\Models\Observation;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ObservationController extends Controller
 {
@@ -13,20 +14,21 @@ class ObservationController extends Controller
     public function index(Request $request)
     {
         $query = Observation::query();
-
         $params = $request->all();
 
-        foreach ($params as $field => $value) {
-            if (in_array($field, ['species', 'amount', 'age', 'sex', 'province', 'location', 'initial_date', 'final_date'])) {
-                $query->where($field, $value);
-            }
-        }
+        if (!empty($params)) {
+            foreach ($params as $field => $value) {
+                if (in_array($field, ['species', 'amount', 'age', 'sex', 'province', 'location', 'initial_date', 'final_date'])) {
+                    $query->where($field, $value);
+                }
 
-        if ($field === 'year') {
-            $query->where(function ($query) use ($value) {
-                $query->whereYear('initial_date', $value)
-                      ->orWhereYear('final_date', $value);
-            });
+                if ($field === 'year') {
+                    $query->where(function ($query) use ($value) {
+                        $query->whereYear('initial_date', $value)
+                            ->orWhereYear('final_date', $value);
+                    });
+                }
+            }
         }
 
         $filteredObservations = $query->get();
@@ -35,19 +37,12 @@ class ObservationController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
     {
-        $request->validate([
+
+        $validatedData = $request->validate([
             'species' => 'required|string',
             'amount' => 'required|integer|min:1',
             'age' => 'nullable|string',
@@ -55,29 +50,16 @@ class ObservationController extends Controller
             'province' => 'required|string',
             'location' => 'nullable|string',
             'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
             'initial_date' => 'nullable|date|date_format:Y-m-d',
             'final_date' => 'nullable|date|date_format:Y-m-d',
             'observer' => 'nullable|string',
             'image' => 'nullable|string',
         ]);
 
-        $observation = new Observation([
-            'species' => $request->get('species'),
-            'amount' => $request->get('amount'),
-            'age' => $request->get('age'),
-            'sex' => $request->get('sex'),
-            'province' => $request->get('province'),
-            'location' => $request->get('location'),
-            'latitude' => $request->get('latitude'),
-            'initial_date' => $request->get('initial_date'),
-            'final_date' => $request->get('final_date'),
-            'observer' => $request->get('observer'),
-            'image' => $request->get('image'),
-        ]);
+        $observation = Observation::create($validatedData);
 
-        $observation->save();
-
-        return response()->json($observation);
+        return response()->json($observation, 201);
     }
 
     /**
@@ -90,33 +72,31 @@ class ObservationController extends Controller
     }
 
     /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
      * Update the specified resource in storage.
      */
     public function update(Request $request, string $id)
     {
-        $observation = Observation::findOrFail($id);
+        if (!Auth::check()) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
 
-        $observation->update([
-            'species' => $request->species,
-            'amount' => $request->amount,
-            'age' => $request->age,
-            'sex' => $request->sex,
-            'province' => $request->province,
-            'location' => $request->location,
-            'latitude' => $request->latitude,
-            'initial_date' => $request->initial_date,
-            'final_date' => $request->final_date,
-            'observer' => $request->observer,
-            'image' => $request->image,
+        $validatedData = $request->validate([
+            'species' => 'required|string',
+            'amount' => 'required|integer|min:1',
+            'age' => 'nullable|string',
+            'sex' => 'nullable|string',
+            'province' => 'required|string',
+            'location' => 'nullable|string',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
+            'initial_date' => 'nullable|date|date_format:Y-m-d',
+            'final_date' => 'nullable|date|date_format:Y-m-d',
+            'observer' => 'nullable|string',
+            'image' => 'nullable|string',
         ]);
+
+        $observation = Observation::findOrFail($id);
+        $observation->update($validatedData);
 
         return response()->json($observation);
     }
@@ -126,8 +106,13 @@ class ObservationController extends Controller
      */
     public function destroy(string $id)
     {
+        if (!Auth::check()) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
         $observation = Observation::findOrFail($id);
         $observation->delete();
-        return response()->json("Record Deleted Successfully");
+
+        return response()->json(['message' => 'Observació eliminada correctament'], 200);
     }
 }

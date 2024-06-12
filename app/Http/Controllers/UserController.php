@@ -30,21 +30,18 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required|max:50',
-            'email' => 'required',
+            'username' => 'required|max:50',
             'password' => 'required'
-          ]);
-      
-          $user = new user([
-            'name' => $request->get('name'),
-            'email' => $request->get('email'),
-            'password' => $request->get('password'),
-          ]);
-      
-          $user->save();
-      
-          return response()->json($user);
+        ]);
 
+        $user = new user([
+            'username' => $request->get('name'),
+            'password' => $request->get('password'),
+        ]);
+
+        $user->save();
+
+        return response()->json($user);
     }
 
     /**
@@ -70,8 +67,7 @@ class UserController extends Controller
     public function update(Request $request, string $id)
     {
         $user = User::find($id);
-        $user->name = $request->name;
-        $user->email = $request->email;
+        $user->username = $request->name;
         $user->password = $request->password;
         $user->update();
 
